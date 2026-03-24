@@ -1,0 +1,5 @@
+package com.InsuranceManagementSystem.dtos;
+
+public class AuthResponse {
+
+}

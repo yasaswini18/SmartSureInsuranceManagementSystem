@@ -1,0 +1,4 @@
+package com.InsuranceManagementSystem.repository;
+
+public class UserRepository{
+}

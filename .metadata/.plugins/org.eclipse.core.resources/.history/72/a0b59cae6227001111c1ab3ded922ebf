@@ -1,0 +1,5 @@
+package com.InsuranceManagementSystem.entity;
+
+public class User {
+
+}

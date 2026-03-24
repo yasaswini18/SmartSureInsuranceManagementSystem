@@ -1,0 +1,8 @@
+package com.InsuranceManagementSystem.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.InsuranceManagementSystem.entity.User;
+
+public class UserRepository extends JpaRepository<User,Long>{
+}
