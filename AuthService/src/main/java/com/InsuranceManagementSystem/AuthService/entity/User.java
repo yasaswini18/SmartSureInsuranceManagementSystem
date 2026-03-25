@@ -1,4 +1,4 @@
-package com.InsuranceManagementSystem.entity;
+package com.InsuranceManagementSystem.AuthService.entity;
 
 import java.time.LocalDateTime;
 

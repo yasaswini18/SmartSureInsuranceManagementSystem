@@ -1,4 +1,4 @@
-package com.InsuranceManagementSystem.dtos;
+package com.InsuranceManagementSystem.AuthService.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
