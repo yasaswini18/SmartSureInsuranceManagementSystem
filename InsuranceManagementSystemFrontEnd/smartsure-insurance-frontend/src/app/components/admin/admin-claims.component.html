@@ -1,0 +1,226 @@
+<div class="p-6 max-w-7xl mx-auto animate-enter">
+  <div class="mb-8">
+    <h1 class="section-title">Manage Claims</h1>
+    <p class="section-subtitle">Review, approve or reject submitted insurance claims</p>
+  </div>
+
+  <div *ngIf="success" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl px-4 py-3 text-sm mb-5 flex items-center gap-2">
+    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+    </svg>
+    {{ success }}
+  </div>
+  <div *ngIf="error && !reviewModal" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-5">{{ error }}</div>
+
+  <div class="flex gap-2 flex-wrap mb-6">
+    <button *ngFor="let s of statuses"
+      (click)="filterStatus = s; applyFilter()"
+      class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+      [class]="filterStatus === s ? 'bg-primary-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'">
+      {{ s.replace('_', ' ') }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <svg class="w-8 h-8 animate-spin text-primary-400" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+  </div>
+
+  <div *ngIf="!loading" class="card overflow-hidden">
+    <div *ngIf="filtered.length === 0" class="p-10 text-center text-slate-500 text-sm">No claims found for this filter.</div>
+    <table *ngIf="filtered.length > 0" class="w-full">
+      <thead class="bg-slate-800/60 border-b border-slate-700/50">
+        <tr>
+          <th class="table-header text-left">Claim #</th>
+          <th class="table-header text-left hidden md:table-cell">Customer</th>
+          <th class="table-header text-left hidden lg:table-cell">Policy</th>
+          <th class="table-header text-right">Amount</th>
+          <th class="table-header text-center">Status</th>
+          <th class="table-header text-center hidden md:table-cell">Date</th>
+          <th class="table-header text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800/60">
+        <tr *ngFor="let claim of paginator.paged" class="hover:bg-slate-800/30 transition-colors">
+          <td class="table-cell">
+            <p class="font-mono text-xs text-primary-400">{{ claim.claimNumber }}</p>
+            <p class="text-xs text-slate-500 mt-0.5 max-w-[140px] truncate">{{ claim.claimType }}</p>
+          </td>
+          <td class="table-cell hidden md:table-cell">
+            <p class="text-sm text-white">{{ claim.customerEmail || '-' }}</p>
+            <p class="text-xs text-slate-500">{{ claim.productName || '' }}</p>
+          </td>
+          <td class="table-cell hidden lg:table-cell font-mono text-xs text-slate-400">{{ claim.policyNumber }}</td>
+          <td class="table-cell text-right font-semibold text-white">Rs {{ claim.claimedAmount | number:'1.0-0' }}</td>
+          <td class="table-cell text-center">
+            <span class="status-badge text-xs" [class]="statusColor(claim.status)">{{ claim.status.replace('_', ' ') }}</span>
+          </td>
+          <td class="table-cell hidden md:table-cell text-center text-slate-400 text-xs">{{ claim.createdAt | date:'shortDate' }}</td>
+          <td class="table-cell text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button *ngIf="claim.status === 'PENDING'"
+                (click)="startReview(claim)"
+                class="text-xs px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg transition-colors">
+                Start Review
+              </button>
+              <button *ngIf="claim.status === 'UNDER_REVIEW'"
+                (click)="openReview(claim)"
+                class="text-xs px-3 py-1.5 bg-primary-600/20 hover:bg-primary-600/30 text-primary-400 border border-primary-500/20 rounded-lg transition-colors">
+                Review
+              </button>
+              <span *ngIf="claim.status === 'APPROVED' || claim.status === 'REJECTED' || claim.status === 'SETTLED'" class="text-xs text-slate-600">-</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <app-pagination
+      [totalItems]="paginator.total"
+      [pageSize]="paginator.pageSize"
+      [currentPage]="paginator.currentPage"
+      (pageChange)="paginator.goTo($event)">
+    </app-pagination>
+  </div>
+</div>
+
+<div *ngIf="reviewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="card p-6 w-full max-w-md animate-enter">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-display font-semibold text-white">Review Claim</h3>
+      <button (click)="reviewModal = false" class="text-slate-500 hover:text-white">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="bg-slate-900/60 rounded-xl p-4 mb-5">
+      <div class="flex justify-between mb-1">
+        <span class="text-xs text-slate-500">Claim Number</span>
+        <span class="text-xs font-mono text-primary-400">{{ selected?.claimNumber }}</span>
+      </div>
+      <div class="flex justify-between mb-1">
+        <span class="text-xs text-slate-500">Customer</span>
+        <span class="text-xs text-white">{{ selected?.customerEmail || '-' }}</span>
+      </div>
+      <div class="flex justify-between mb-1">
+        <span class="text-xs text-slate-500">Amount</span>
+        <span class="text-xs text-white font-semibold">Rs {{ selected?.claimedAmount | number:'1.0-0' }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-xs text-slate-500">Claim Type</span>
+        <span class="text-xs text-white max-w-[200px] text-right">{{ selected?.claimType }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="error" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-4">{{ error }}</div>
+
+    <div class="mb-4">
+      <label class="label">Decision</label>
+      <div class="grid grid-cols-2 gap-3">
+        <button type="button" (click)="reviewStatus = 'APPROVED'"
+          class="py-3 rounded-xl border text-sm font-medium transition-all"
+          [class]="reviewStatus === 'APPROVED' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'">
+          Approve
+        </button>
+        <button type="button" (click)="reviewStatus = 'REJECTED'"
+          class="py-3 rounded-xl border text-sm font-medium transition-all"
+          [class]="reviewStatus === 'REJECTED' ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'">
+          Reject
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="reviewStatus === 'APPROVED'" class="mb-4">
+      <label class="label">Approved Amount</label>
+      <input [(ngModel)]="approvedAmount" type="number" class="input-field" />
+    </div>
+
+    <div class="mb-5">
+      <label class="label">Uploaded Documents</label>
+      <div *ngIf="documents.length === 0" class="rounded-xl border border-slate-700 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
+        No supporting documents were uploaded with this claim.
+      </div>
+      <div *ngIf="documents.length > 0" class="space-y-3">
+        <div *ngFor="let document of documents" class="rounded-xl border border-slate-700 bg-slate-900/40 px-4 py-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-white">{{ document.fileName || 'Document' }}</p>
+              <p class="mt-1 text-xs text-slate-400">
+                {{ document.fileType || 'File' }}
+                <span *ngIf="document.fileSize">| {{ document.fileSize }}</span>
+                <span *ngIf="document.uploadedAt">| {{ document.uploadedAt | date:'short' }}</span>
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button"
+                (click)="openDocument(document)"
+                [disabled]="openingDocument === (document.fileName || document.downloadUrl || '')"
+                class="rounded-lg border border-primary-500/30 bg-primary-500/10 px-3 py-2 text-xs font-medium text-primary-300 transition-colors hover:bg-primary-500/20 disabled:cursor-not-allowed disabled:opacity-60">
+                {{ openingDocument === (document.fileName || document.downloadUrl || '') ? 'Opening...' : 'View' }}
+              </button>
+              <button type="button"
+                (click)="downloadDocument(document)"
+                [disabled]="openingDocument === (document.fileName || document.downloadUrl || '')"
+                class="rounded-lg border border-slate-600 bg-slate-800 px-2.5 py-2 text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Download document"
+                title="Download document">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4m-5 8h18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <label class="label">Admin Remarks <span class="text-red-400">*</span></label>
+      <textarea [(ngModel)]="adminRemarks" class="input-field resize-none" rows="3" placeholder="Provide your decision remarks..."></textarea>
+    </div>
+
+    <div class="flex gap-3">
+      <button (click)="reviewModal = false" class="btn-secondary flex-1 justify-center">Cancel</button>
+      <button (click)="submitReview()" [disabled]="reviewLoading"
+        class="flex-1 justify-center py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+        [class]="reviewStatus === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-red-600 hover:bg-red-500 text-white'">
+        <svg *ngIf="reviewLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        {{ reviewLoading ? 'Submitting...' : (reviewStatus === 'APPROVED' ? 'Approve Claim' : 'Reject Claim') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="previewDocumentUrl" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+  <div class="flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-slate-700 bg-slate-950 shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+      <div class="min-w-0">
+        <p class="truncate text-sm font-semibold text-white">{{ previewDocumentName }}</p>
+        <p class="mt-1 text-xs text-slate-400">{{ previewDocumentType || 'Document preview' }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a [href]="previewDocumentUrl" [download]="previewDocumentName"
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+          title="Download">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l4-4m-4 4l-4-4m-5 8h18"/>
+          </svg>
+        </a>
+        <button type="button" (click)="closePreview()" class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">
+          Close
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-auto bg-slate-900">
+      <img *ngIf="isImagePreview()" [src]="previewDocumentUrl" [alt]="previewDocumentName" class="mx-auto max-h-full max-w-full object-contain p-4" />
+      <iframe *ngIf="!isImagePreview()" [src]="previewDocumentUrl" class="h-full w-full border-0" title="Document preview"></iframe>
+    </div>
+  </div>
+</div>

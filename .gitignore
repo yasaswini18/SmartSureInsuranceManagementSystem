@@ -1,0 +1,10 @@
+/.metadata/
+# Environment variables → never commit
+.env
+
+# Docker volumes
+mysql-data/
+claims-uploads/
+
+# Build artifacts
+**/target/

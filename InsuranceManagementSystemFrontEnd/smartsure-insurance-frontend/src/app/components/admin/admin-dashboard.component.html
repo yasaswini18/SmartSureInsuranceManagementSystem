@@ -1,0 +1,116 @@
+<div class="mx-auto max-w-7xl animate-enter">
+  <div class="mb-8">
+    <h1 class="section-title">Admin Dashboard</h1>
+    <p class="section-subtitle">System-wide metrics, claim operations, and platform activity in a brighter control room layout.</p>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <svg class="h-8 w-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+  </div>
+
+  <div *ngIf="error" class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>
+
+  <ng-container *ngIf="!loading && report">
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="card p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Total users</p>
+        <p class="mt-3 font-display text-4xl font-extrabold text-slate-950">{{ safeNumber(report.totalUsers) }}</p>
+        <a routerLink="/admin/users" class="mt-3 inline-block text-sm font-bold text-primary-700">View users</a>
+      </div>
+      <div class="card p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Active policies</p>
+        <p class="mt-3 font-display text-4xl font-extrabold text-slate-950">{{ safeNumber(report.activePolicies) }}</p>
+        <p class="mt-3 text-sm text-emerald-600">{{ policyActivationRate }}% of {{ safeNumber(report.totalPurchasedPolicies) }} total</p>
+      </div>
+      <div class="card p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Pending claims</p>
+        <p class="mt-3 font-display text-4xl font-extrabold text-slate-950">{{ safeNumber(report.pendingClaims) }}</p>
+        <a routerLink="/admin/claims" class="mt-3 inline-block text-sm font-bold text-amber-700">Review now</a>
+      </div>
+      <div class="card p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Premium collected</p>
+        <p class="mt-3 font-display text-4xl font-extrabold text-slate-950">Rs {{ safeNumber(report.totalPremiumCollected) | number:'1.0-0' }}</p>
+        <p class="mt-3 text-sm text-violet-600">premium collected</p>
+      </div>
+    </div>
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <div class="section-panel">
+        <div class="mb-6">
+          <h2 class="font-display text-2xl font-bold text-slate-950">Claims overview</h2>
+          <p class="mt-1 text-sm text-slate-500">Operational distribution across the claim pipeline.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <div class="mb-2 flex justify-between text-sm">
+              <span class="font-medium text-slate-600">Pending / Under Review</span>
+              <span class="font-bold text-amber-700">{{ safeNumber(report.pendingClaims) + safeNumber(report.underReviewClaims) }}</span>
+            </div>
+            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-amber-400" [style.width.%]="safeNumber(report.totalClaims) ? ((safeNumber(report.pendingClaims) + safeNumber(report.underReviewClaims)) / safeNumber(report.totalClaims) * 100) : 0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="mb-2 flex justify-between text-sm">
+              <span class="font-medium text-slate-600">Approved</span>
+              <span class="font-bold text-emerald-700">{{ safeNumber(report.approvedClaims) }}</span>
+            </div>
+            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-emerald-500" [style.width.%]="safeNumber(report.totalClaims) ? (safeNumber(report.approvedClaims) / safeNumber(report.totalClaims) * 100) : 0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="mb-2 flex justify-between text-sm">
+              <span class="font-medium text-slate-600">Rejected</span>
+              <span class="font-bold text-red-600">{{ safeNumber(report.rejectedClaims) }}</span>
+            </div>
+            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-red-500" [style.width.%]="safeNumber(report.totalClaims) ? (safeNumber(report.rejectedClaims) / safeNumber(report.totalClaims) * 100) : 0"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-4 border-t border-slate-200 pt-6 md:grid-cols-3">
+          <div>
+            <p class="font-display text-3xl font-extrabold text-slate-950">{{ safeNumber(report.totalClaims) }}</p>
+            <p class="text-sm text-slate-500">Total claims</p>
+          </div>
+          <div>
+            <p class="font-display text-3xl font-extrabold text-emerald-700">{{ claimApprovalRate }}%</p>
+            <p class="text-sm text-slate-500">Approval rate</p>
+          </div>
+          <div>
+            <p class="font-display text-3xl font-extrabold text-slate-950">{{ safeNumber(report.totalPurchasedPolicies) }}</p>
+            <p class="text-sm text-slate-500">Purchased policies</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-[32px] bg-slate-950 p-6 text-white shadow-[0_22px_60px_-32px_rgba(16,37,66,0.7)]">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">Quick actions</p>
+        <div class="mt-5 space-y-3">
+          <a routerLink="/admin/claims" class="block rounded-3xl bg-white/10 p-4">
+            <p class="text-sm font-bold text-white">Review Claims</p>
+            <p class="mt-1 text-sm text-slate-300">{{ safeNumber(report.pendingClaims) + safeNumber(report.underReviewClaims) }} pending</p>
+          </a>
+          <a routerLink="/admin/policies" class="block rounded-3xl bg-white/10 p-4">
+            <p class="text-sm font-bold text-white">Manage Products</p>
+            <p class="mt-1 text-sm text-slate-300">Update policy catalogue</p>
+          </a>
+          <a routerLink="/admin/users" class="block rounded-3xl bg-white/10 p-4">
+            <p class="text-sm font-bold text-white">User Directory</p>
+            <p class="mt-1 text-sm text-slate-300">{{ safeNumber(report.totalUsers) }} registered users</p>
+          </a>
+          <a routerLink="/admin/reports" class="block rounded-3xl bg-white/10 p-4">
+            <p class="text-sm font-bold text-white">Reports</p>
+            <p class="mt-1 text-sm text-slate-300">Analytics and audit views</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

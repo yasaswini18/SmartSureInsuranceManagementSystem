@@ -1,0 +1,91 @@
+<div class="p-6 max-w-2xl mx-auto animate-enter">
+  <div class="mb-8">
+    <h1 class="section-title">File a Claim</h1>
+    <p class="section-subtitle">Submit a new insurance claim for review</p>
+  </div>
+
+  <div *ngIf="success" class="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm mb-5 flex items-center gap-2">
+    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+    </svg>
+    {{ success }}
+  </div>
+
+  <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-5">{{ error }}</div>
+
+  <div class="card p-6">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5">
+      <div>
+        <label class="label">Select Policy</label>
+        <select formControlName="policyNumber" class="input-field" (change)="onPolicyChange()">
+          <option value="" disabled>-- Select an active policy --</option>
+          <option *ngFor="let p of policies" [value]="p.policyNumber">
+            {{ p.policyNumber }} - Rs {{ p.coverageAmount | number:'1.0-0' }} - {{ p.productName }}
+          </option>
+        </select>
+        <p *ngIf="!loadingPolicies && policies.length === 0" class="text-amber-600 text-xs mt-1">No active policies found. Please purchase a policy first.</p>
+        <p *ngIf="form.get('policyNumber')?.invalid && form.get('policyNumber')?.touched" class="text-red-600 text-xs mt-1">Please select a policy.</p>
+        <p *ngIf="isWaitingPeriodBlocked && waitingPeriodEnd" class="text-red-600 text-xs mt-1">
+          Waiting period not completed. You can raise a claim after {{ waitingPeriodEnd | date:'dd MMM yyyy' }}.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Incident Date</label>
+          <input formControlName="incidentDate" type="date" class="input-field" [max]="today" />
+          <p *ngIf="form.get('incidentDate')?.invalid && form.get('incidentDate')?.touched" class="text-red-600 text-xs mt-1">Date is required.</p>
+        </div>
+        <div>
+          <label class="label">Claim Amount (Rs)</label>
+          <input formControlName="claimedAmount" type="number" class="input-field" placeholder="e.g. 50000" />
+          <p *ngIf="selectedPolicy" class="mt-1 text-xs text-slate-500">Maximum: Rs {{ selectedPolicy.coverageAmount | number:'1.0-0' }}</p>
+          <p *ngIf="form.get('claimedAmount')?.hasError('required') && form.get('claimedAmount')?.touched" class="text-red-600 text-xs mt-1">Claim amount is required.</p>
+          <p *ngIf="form.get('claimedAmount')?.hasError('max') && form.get('claimedAmount')?.touched" class="text-red-600 text-xs mt-1">Claim amount cannot exceed the policy coverage.</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Claim Type</label>
+        <select formControlName="claimType" class="input-field">
+          <option value="" disabled>Select claim type</option>
+          <option *ngFor="let type of claimTypes" [value]="type">{{ type.replace('_', ' ') }}</option>
+        </select>
+        <p *ngIf="form.get('claimType')?.invalid && form.get('claimType')?.touched" class="text-red-600 text-xs mt-1">Claim type is required.</p>
+      </div>
+
+      <div>
+        <label class="label">Detailed Description</label>
+        <textarea formControlName="description" class="input-field resize-none" rows="4"
+          placeholder="Describe the incident in detail - what happened, when, and the extent of damage or loss."></textarea>
+        <p *ngIf="form.get('description')?.invalid && form.get('description')?.touched" class="text-red-600 text-xs mt-1">Description must be at least 20 characters.</p>
+      </div>
+
+      <div>
+        <label class="label">Supporting Documents (Optional)</label>
+        <div class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:border-primary-500/50 transition-colors cursor-pointer" (click)="fileInput.click()">
+          <svg class="w-8 h-8 text-slate-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          <p class="text-slate-500 text-sm">{{ selectedFiles.length ? (selectedFiles.length + ' file(s) selected') : 'Click to upload PDF or image files' }}</p>
+          <p class="text-slate-500 text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
+        </div>
+        <input #fileInput type="file" multiple accept=".pdf,.jpg,.jpeg,.png" class="hidden" (change)="onFilesSelected($event)" />
+        <div *ngIf="selectedFiles.length" class="mt-3 space-y-1">
+          <p *ngFor="let file of selectedFiles" class="text-xs text-slate-600">{{ file.name }}</p>
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="button" (click)="form.reset(); selectedFiles = []; selectedPolicy = null" class="btn-secondary flex-1 justify-center">Reset</button>
+        <button type="submit" [disabled]="loading || policies.length === 0 || isWaitingPeriodBlocked" class="btn-primary flex-1 justify-center">
+          <svg *ngIf="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          {{ loading ? 'Submitting...' : 'Submit Claim' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

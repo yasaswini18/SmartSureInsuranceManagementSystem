@@ -122,11 +122,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRuntimeException(
             RuntimeException ex
     ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        String message = ex.getMessage();
+
+        if (message != null && (
+                message.contains("refresh token") ||
+                message.contains("Session expired due to inactivity")
+        )) {
+            status = HttpStatus.UNAUTHORIZED;
+        }
+
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(status)
                 .body(ErrorResponse.builder()
-                        .status(400)
-                        .message(ex.getMessage())
+                        .status(status.value())
+                        .message(message)
                         .timestamp(LocalDateTime.now())
                         .build());
     }

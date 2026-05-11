@@ -3,6 +3,7 @@ package com.InsuranceManagementSystem.AuthService.security;
 import java.io.IOException;
 import java.util.List;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,6 +42,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String email = null;
         try {
             email = jwtUtil.extractEmail(token);
+        } catch (ExpiredJwtException e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Access token expired\"}");
+            return;
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Invalid access token\"}");
+            return;
+        }
+
+        try {
+            String tokenType = jwtUtil.extractClaim(token, claims -> claims.get("tokenType", String.class));
+            if (tokenType != null && !"ACCESS".equals(tokenType)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\":\"Invalid access token type\"}");
+                return;
+            }
         } catch (Exception e) {
             filterChain.doFilter(request, response);
             return;

@@ -1,0 +1,8 @@
+target/*.jar.original
+.mvn
+mvn
+*.md
+.git
+.gitignore
+Dockerfile
+docker-compose.yml

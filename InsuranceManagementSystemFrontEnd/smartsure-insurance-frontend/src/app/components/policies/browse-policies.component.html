@@ -1,0 +1,304 @@
+<div class="mx-auto max-w-7xl animate-enter">
+  <div class="mb-8">
+    <h1 class="section-title">Insurance Plans</h1>
+    <p class="section-subtitle">Browse policy products in a marketplace-style layout inspired by modern insurance portals.</p>
+  </div>
+
+  <div *ngIf="success" class="mb-6 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+    <svg class="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+    </svg>
+    {{ success }}
+  </div>
+
+  <div *ngIf="purchaseBlockedMessage" class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    {{ purchaseBlockedMessage }}
+  </div>
+
+  <div *ngIf="loading" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div *ngFor="let i of [1,2,3,4,5,6]" class="card animate-pulse p-6">
+      <div class="mb-4 h-4 w-24 rounded bg-slate-200"></div>
+      <div class="mb-3 h-7 w-2/3 rounded bg-slate-200"></div>
+      <div class="mb-2 h-3 rounded bg-slate-200"></div>
+      <div class="h-3 w-3/4 rounded bg-slate-200"></div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading" class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div *ngFor="let product of products" class="card flex flex-col p-6 transition-transform duration-200 hover:-translate-y-1">
+      <div class="flex items-center justify-between">
+        <span class="status-badge border text-xs" [class]="coverageTypeColor(product.type)">
+          {{ product.type }}
+        </span>
+        <span *ngIf="!product.isActive" class="status-badge bg-red-50 text-red-600">Inactive</span>
+      </div>
+
+      <h3 class="mt-5 font-display text-2xl font-bold text-slate-950">{{ product.name }}</h3>
+      <p class="mt-3 flex-1 text-sm leading-7 text-slate-600">{{ product.description }}</p>
+
+      <div class="mt-6 rounded-[24px] bg-slate-50 p-4">
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-500">Base premium</span>
+          <span class="font-bold text-slate-900">Rs {{ product.basePremium | number:'1.0-0' }}/month</span>
+        </div>
+        <div class="mt-3 flex justify-between text-sm">
+          <span class="text-slate-500">Coverage</span>
+          <span class="font-bold text-slate-900">Rs {{ product.coverageAmount | number:'1.0-0' }}</span>
+        </div>
+        <div class="mt-3 flex justify-between text-sm">
+          <span class="text-slate-500">Age eligibility</span>
+          <span class="font-bold text-slate-900">{{ product.minAge }} - {{ product.maxAge }} years</span>
+        </div>
+        <div class="mt-3 flex justify-between text-sm">
+          <span class="text-slate-500">Duration</span>
+          <span class="font-bold text-slate-900">{{ product.durationMonths }} months</span>
+        </div>
+      </div>
+
+      <button (click)="openPurchase(product)" [disabled]="!product.isActive"
+        class="btn-primary mt-6 w-full justify-center disabled:cursor-not-allowed disabled:opacity-50">
+        {{ product.isActive ? 'Purchase Plan' : 'Unavailable' }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && products.length === 0" class="card py-20 text-center">
+    <p class="font-display text-2xl font-bold text-slate-900">No insurance plans available</p>
+    <p class="mt-2 text-sm text-slate-500">Check back after new products are published.</p>
+  </div>
+</div>
+
+<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm" (click)="closeModal()">
+  <div class="panel-glass w-full max-w-3xl p-6 max-h-[92vh] overflow-y-auto" (click)="$event.stopPropagation()">
+    <div class="mb-5 flex items-center justify-between">
+      <h3 class="font-display text-2xl font-bold text-slate-950">Purchase Plan</h3>
+      <button (click)="closeModal()" class="rounded-2xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="rounded-[24px] bg-slate-50 p-4">
+      <p class="font-display text-xl font-bold text-slate-950">{{ selectedProduct?.name }}</p>
+      <p class="mt-2 text-sm text-slate-600">Base premium: Rs {{ selectedProduct?.basePremium | number:'1.0-0' }}/month</p>
+      <p class="text-sm text-slate-600">Coverage amount: Rs {{ selectedProduct?.coverageAmount | number:'1.0-0' }}</p>
+      <p class="text-sm text-slate-600">Eligible age: {{ selectedProduct?.minAge }} to {{ selectedProduct?.maxAge }} years</p>
+    </div>
+
+    <div *ngIf="error" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>
+
+    <form [formGroup]="purchaseForm" (ngSubmit)="purchase()" class="mt-5 space-y-5">
+      <div>
+        <label class="label">Your Age</label>
+        <input formControlName="age" type="number" class="input-field" placeholder="Enter your age" />
+        <p *ngIf="purchaseForm.get('age')?.invalid && purchaseForm.get('age')?.touched" class="mt-2 text-xs text-red-600">{{ ageRangeMessage }}</p>
+      </div>
+
+      <ng-container *ngIf="isType('HEALTH')">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Gender</label>
+            <select formControlName="gender" class="input-field">
+              <option value="" disabled>Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Pre-existing Medical Conditions</label>
+            <select formControlName="preExistingCondition" class="input-field">
+              <option value="" disabled>Select condition</option>
+              <option value="None">None</option>
+              <option value="Diabetes">Diabetes</option>
+              <option value="Blood Pressure">Blood Pressure</option>
+              <option value="Heart Disease">Heart Disease</option>
+              <option value="Asthma">Asthma</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Number of Members to Cover</label>
+          <select formControlName="membersToCover" class="input-field">
+            <option value="" disabled>Select coverage members</option>
+            <option value="1 (Individual)">1 (Individual)</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5+">5+</option>
+          </select>
+        </div>
+        <p *ngIf="showPreExistingInfo" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">Pre-existing conditions may have a 2 year waiting period before claims are accepted.</p>
+      </ng-container>
+
+      <ng-container *ngIf="isType('LIFE')">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Gender</label>
+            <select formControlName="gender" class="input-field">
+              <option value="" disabled>Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Smoker</label>
+            <select formControlName="smoker" class="input-field">
+              <option value="" disabled>Select option</option>
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+        </div>
+        <p *ngIf="showSmokerInfo" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">Smokers may have a higher risk assessment. This will be reviewed by our team.</p>
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="md:col-span-2">
+            <label class="label">Nominee Full Name</label>
+            <input formControlName="nomineeName" type="text" class="input-field" placeholder="Enter the name of your nominee" />
+          </div>
+          <div>
+            <label class="label">Nominee Age</label>
+            <input formControlName="nomineeAge" type="number" class="input-field" />
+          </div>
+        </div>
+        <div>
+          <label class="label">Nominee Relationship</label>
+          <select formControlName="nomineeRelationship" class="input-field">
+            <option value="" disabled>Select relationship</option>
+            <option value="Spouse">Spouse</option>
+            <option value="Child">Child</option>
+            <option value="Parent">Parent</option>
+            <option value="Sibling">Sibling</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="isType('VEHICLE')">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Vehicle Type</label>
+            <select formControlName="vehicleType" class="input-field">
+              <option value="" disabled>Select vehicle type</option>
+              <option value="Two Wheeler (Bike/Scooter)">Two Wheeler (Bike/Scooter)</option>
+              <option value="Four Wheeler (Car)">Four Wheeler (Car)</option>
+              <option value="Three Wheeler (Auto)">Three Wheeler (Auto)</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Has Valid Driving Licence</label>
+            <select formControlName="hasValidDrivingLicence" class="input-field">
+              <option value="" disabled>Select option</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Vehicle Registration Number</label>
+          <input formControlName="registrationNumber" type="text" class="input-field" placeholder="e.g. RJ14 AB 1234" />
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Vehicle Make and Model</label>
+            <input formControlName="makeModel" type="text" class="input-field" placeholder="e.g. Honda Activa, Maruti Swift" />
+          </div>
+          <div>
+            <label class="label">Year of Manufacture</label>
+            <input formControlName="yearOfManufacture" type="number" class="input-field" />
+          </div>
+        </div>
+        <p *ngIf="showOldVehicleInfo" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">Vehicles older than 10 years may have limited coverage.</p>
+        <p *ngIf="invalidDrivingLicenceSelected" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">A valid driving licence is required to purchase vehicle insurance.</p>
+      </ng-container>
+
+      <ng-container *ngIf="isType('PROPERTY')">
+        <div>
+          <label class="label">Property Type</label>
+          <select formControlName="propertyType" class="input-field">
+            <option value="" disabled>Select property type</option>
+            <option value="Apartment/Flat">Apartment/Flat</option>
+            <option value="Independent House">Independent House</option>
+            <option value="Villa">Villa</option>
+            <option value="Commercial Space">Commercial Space</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Property Address to Insure</label>
+          <textarea formControlName="propertyAddress" class="input-field resize-none" rows="3" placeholder="Enter the full address of the property to be insured"></textarea>
+          <p class="mt-1 text-xs text-slate-500">This may be different from your residential address.</p>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Age of Property (in years)</label>
+            <input formControlName="propertyAge" type="number" class="input-field" />
+          </div>
+          <div>
+            <label class="label">Ownership Status</label>
+            <select formControlName="ownershipStatus" class="input-field">
+              <option value="" disabled>Select ownership</option>
+              <option value="Owner">Owner</option>
+              <option value="Co-owner">Co-owner</option>
+              <option value="Tenant">Tenant</option>
+            </select>
+          </div>
+        </div>
+        <p *ngIf="showOldPropertyInfo" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">Properties older than 50 years will require a physical inspection before policy activation.</p>
+        <p *ngIf="showTenantInfo" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">As a tenant, only Home Content Protection is recommended. Structure coverage requires ownership.</p>
+      </ng-container>
+
+      <ng-container *ngIf="isType('TRAVEL')">
+        <div>
+          <label class="label">Travel Destination Type</label>
+          <select formControlName="destinationType" class="input-field">
+            <option value="" disabled>Select destination type</option>
+            <option value="Within India (Domestic)">Within India (Domestic)</option>
+            <option value="Outside India (International)">Outside India (International)</option>
+          </select>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Travel Start Date</label>
+            <input formControlName="travelStartDate" type="date" class="input-field" [min]="today" />
+          </div>
+          <div>
+            <label class="label">Travel End Date</label>
+            <input formControlName="travelEndDate" type="date" class="input-field" [min]="purchaseForm.get('travelStartDate')?.value || today" />
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="label">Number of Travellers</label>
+            <input formControlName="travellersCount" type="number" class="input-field" />
+          </div>
+          <div>
+            <label class="label">Purpose of Travel</label>
+            <select formControlName="travelPurpose" class="input-field">
+              <option value="" disabled>Select purpose</option>
+              <option value="Tourism/Holiday">Tourism/Holiday</option>
+              <option value="Business">Business</option>
+              <option value="Education/Studies">Education/Studies</option>
+              <option value="Medical Treatment">Medical Treatment</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <p *ngIf="purchaseForm.hasError('travelDateRange') && purchaseForm.get('travelEndDate')?.touched" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Travel end date must be after travel start date.</p>
+      </ng-container>
+
+      <div class="flex gap-3">
+        <button type="button" (click)="closeModal()" class="btn-secondary flex-1 justify-center">Cancel</button>
+        <button type="submit" [disabled]="purchaseLoading || invalidDrivingLicenceSelected" class="btn-primary flex-1 justify-center">
+          <svg *ngIf="purchaseLoading" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          {{ purchaseLoading ? 'Processing...' : 'Confirm Purchase' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

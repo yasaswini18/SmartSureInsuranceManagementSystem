@@ -20,11 +20,13 @@ public class DataInitializer {
 	    @Bean
 	    CommandLineRunner initAdmin() {
 	        return args -> {
-	            if (!repo.existsByEmail("yasaswini@gmail.com")) {
+	            if (!repo.existsByEmail("yasaswini18102004@gmail.com")) {
 	                repo.save(User.builder()
 	                        .fullName("yasaswini")
-	                        .email("yasaswini@gmail.com")
+	                        .email("yasaswini18102004@gmail.com")
 	                        .password(encoder.encode("yasaswini123"))
+	                        .phone("9999999999")
+	                        .address("System Seed Admin Address")
 	                        .role(Role.ADMIN)
 	                        .build());
 	            }

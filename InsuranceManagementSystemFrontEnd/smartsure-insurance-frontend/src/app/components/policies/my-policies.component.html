@@ -1,0 +1,93 @@
+<div class="p-6 max-w-7xl mx-auto animate-enter">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="section-title">My Policies</h1>
+      <p class="section-subtitle">Manage your purchased insurance policies</p>
+    </div>
+    <a routerLink="/policies/browse" class="btn-primary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Policy
+    </a>
+  </div>
+
+  <div *ngIf="success" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl px-4 py-3 text-sm mb-5">{{ success }}</div>
+  <div *ngIf="error" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-5">{{ error }}</div>
+
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <svg class="w-8 h-8 animate-spin text-primary-400" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+  </div>
+
+  <div *ngIf="!loading && policies.length === 0" class="card p-12 text-center">
+    <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+    <p class="text-slate-400 mb-4">No policies purchased yet</p>
+    <a routerLink="/policies/browse" class="btn-primary inline-flex">Browse Plans</a>
+  </div>
+
+  <ng-container *ngIf="!loading && policies.length > 0">
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div *ngFor="let policy of paginator.paged" class="card p-5 hover:border-slate-300 transition-all">
+        <div class="flex items-start justify-between mb-4">
+          <span class="status-badge text-xs" [class]="statusColor(policy.status)">{{ policy.status }}</span>
+          <p class="text-xs text-slate-500 font-mono">{{ policy.policyNumber }}</p>
+        </div>
+
+        <div *ngIf="expiringBadge(policy) as badge" class="mb-4 rounded-xl px-3 py-2 text-xs font-semibold" [class]="badge.classes">
+          {{ badge.text }}
+        </div>
+
+        <h3 class="font-display font-semibold text-slate-900 mb-1">{{ policy.productName }}</h3>
+        <p class="text-xs text-slate-500 mb-4">{{ policy.policyType }} Coverage</p>
+
+        <div class="space-y-2 mb-4">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-500">Premium</span>
+            <span class="text-slate-900 font-semibold">Rs {{ policy.premiumPaid | number:'1.0-0' }}/mo</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-500">Coverage</span>
+            <span class="text-slate-900 font-semibold">Rs {{ policy.coverageAmount | number:'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-500">Valid Until</span>
+            <span class="text-slate-900 font-semibold">{{ policy.endDate | date:'mediumDate' }}</span>
+          </div>
+          <div *ngIf="policy.daysRemaining !== undefined" class="flex justify-between text-xs">
+            <span class="text-slate-500">Days Remaining</span>
+            <span [class]="(policy.daysRemaining || 0) < 30 ? 'text-red-600 font-semibold' : 'text-slate-900 font-semibold'">
+              {{ policy.daysRemaining }} days
+            </span>
+          </div>
+        </div>
+
+        <button *ngIf="policy.status === 'ACTIVE' || policy.status === 'CREATED'"
+          (click)="cancel(policy)"
+          [disabled]="cancellingId === policy.id"
+          class="btn-danger w-full justify-center text-xs py-2">
+          <svg *ngIf="cancellingId === policy.id" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          {{ cancellingId === policy.id ? 'Cancelling...' : 'Cancel Policy' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card mt-5">
+      <app-pagination
+        [totalItems]="paginator.total"
+        [pageSize]="paginator.pageSize"
+        [currentPage]="paginator.currentPage"
+        (pageChange)="paginator.goTo($event)">
+      </app-pagination>
+    </div>
+  </ng-container>
+</div>

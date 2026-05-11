@@ -1,0 +1,223 @@
+version: '3.8'
+
+services:
+
+  # ── MySQL ──────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: insurance-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
+    volumes:
+      # Persist MySQL data between container restarts
+      - mysql-data:/var/lib/mysql
+      # Run init.sql on first startup → creates all databases
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - insurance-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Zipkin ─────────────────────────────────────────
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: insurance-zipkin
+    restart: always
+    ports:
+      - "9411:9411"
+    networks:
+      - insurance-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q",
+             "http://localhost:9411/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Eureka Server ──────────────────────────────────
+  eureka-server:
+    build:
+      context: ./ServiceRegistry
+      dockerfile: Dockerfile
+    container_name: insurance-eureka
+    restart: always
+    ports:
+      - "8761:8761"
+    networks:
+      - insurance-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q",
+             "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ── Config Server ──────────────────────────────────
+  config-server:
+    build:
+      context: ./ConfigServer
+      dockerfile: Dockerfile
+    container_name: insurance-config
+    restart: always
+    ports:
+      - "8888:8888"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    networks:
+      - insurance-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q",
+             "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ── API Gateway ────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./ApiGateway
+      dockerfile: Dockerfile
+    container_name: insurance-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+    networks:
+      - insurance-network
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  # ── Auth Service ───────────────────────────────────
+  auth-service:
+    build:
+      context: ./AuthService
+      dockerfile: Dockerfile
+    container_name: insurance-auth
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      - insurance-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  # ── Policy Service ─────────────────────────────────
+  policy-service:
+    build:
+      context: ./PolicyService
+      dockerfile: Dockerfile
+    container_name: insurance-policy
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      - insurance-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+
+  # ── Claims Service ─────────────────────────────────
+  claims-service:
+    build:
+      context: ./ClaimsService
+      dockerfile: Dockerfile
+    container_name: insurance-claims
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      # Persist uploaded claim documents
+      - claims-uploads:/app/uploads/claims
+    networks:
+      - insurance-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      policy-service:
+        condition: service_started
+
+  # ── Admin Service ──────────────────────────────────
+  admin-service:
+    build:
+      context: ./AdminService
+      dockerfile: Dockerfile
+    container_name: insurance-admin
+    restart: always
+    ports:
+      - "8084:8084"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      - insurance-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      claims-service:
+        condition: service_started
+
+# ── Volumes ────────────────────────────────────────────
+volumes:
+  mysql-data:
+    driver: local
+  claims-uploads:
+    driver: local
+
+# ── Networks ───────────────────────────────────────────
+networks:
+  insurance-network:
+    driver: bridge

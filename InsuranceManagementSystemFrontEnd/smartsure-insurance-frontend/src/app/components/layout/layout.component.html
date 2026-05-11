@@ -1,0 +1,109 @@
+<div class="flex min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#eef4fb_100%)]">
+  <aside class="hidden w-80 shrink-0 border-r border-slate-200 bg-white px-5 py-5 lg:flex lg:flex-col">
+    <div class="flex items-center gap-3 rounded-[28px] bg-slate-950 px-4 py-4 text-white">
+      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <div>
+        <p class="font-display text-xl font-bold">SmartSure</p>
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Insurance operations</p>
+      </div>
+    </div>
+
+    <div class="mt-5 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold"
+          [class]="auth.admin ? 'bg-amber-100 text-amber-700' : 'bg-primary-100 text-primary-700'">
+          {{ userInitials }}
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-sm font-bold text-slate-900">{{ userName }}</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.18em]" [class]="auth.admin ? 'text-amber-700' : 'text-primary-700'">{{ userRole }}</p>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl bg-white px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Portal status</p>
+        <p class="mt-1 text-sm font-medium text-slate-700">{{ auth.admin ? 'Admin workspace active' : 'Customer workspace active' }}</p>
+      </div>
+    </div>
+
+    <nav class="mt-6 flex-1 space-y-1 overflow-y-auto">
+      <p class="px-4 pb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Navigation</p>
+      <ng-container *ngFor="let item of navItems">
+        <a [routerLink]="item.route" routerLinkActive="active" class="nav-link">
+          <svg *ngIf="item.icon === 'home'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <svg *ngIf="item.icon === 'shield'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          <svg *ngIf="item.icon === 'document'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <svg *ngIf="item.icon === 'clipboard'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+          </svg>
+          <svg *ngIf="item.icon === 'plus-circle'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <svg *ngIf="item.icon === 'chart'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+          </svg>
+          <svg *ngIf="item.icon === 'users'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg *ngIf="item.icon === 'chart-bar'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          {{ item.label }}
+        </a>
+      </ng-container>
+    </nav>
+
+    <button (click)="logout()" class="nav-link mt-5 w-full border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      </svg>
+      Sign Out
+    </button>
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur md:px-6 lg:hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-700 text-white">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div>
+            <p class="font-display text-lg font-bold text-slate-900">SmartSure</p>
+            <p class="text-xs uppercase tracking-[0.18em] text-slate-400">{{ userRole }}</p>
+          </div>
+        </div>
+        <button (click)="logout()" class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Logout</button>
+      </div>
+    </header>
+
+    <main class="min-w-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+      <div class="mb-5 rounded-[28px] bg-gradient-to-r from-primary-800 via-primary-700 to-sky-600 px-5 py-5 text-white shadow-[0_22px_60px_-32px_rgba(15,108,189,0.65)]">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">Workspace overview</p>
+        <div class="mt-2 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 class="font-display text-3xl font-bold">{{ auth.admin ? 'Admin control center' : 'Customer policy hub' }}</h2>
+            <p class="mt-1 text-sm text-sky-50">{{ auth.admin ? 'Monitor platform activity and process service requests faster.' : 'Review plans, policies, claims, and renewals in one place.' }}</p>
+          </div>
+          <div class="rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold">
+            Signed in as {{ userName }}
+          </div>
+        </div>
+      </div>
+
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,145 @@
+<div class="p-6 max-w-7xl mx-auto animate-enter">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="section-title">Policy Products</h1>
+      <p class="section-subtitle">Create and manage insurance product catalogue</p>
+    </div>
+    <button (click)="openCreate()" class="btn-primary">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Product
+    </button>
+  </div>
+
+  <div *ngIf="success" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl px-4 py-3 text-sm mb-5">{{ success }}</div>
+  <div *ngIf="error && !showModal" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-5">{{ error }}</div>
+
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <svg class="w-8 h-8 animate-spin text-primary-400" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+  </div>
+
+  <div *ngIf="!loading" class="card overflow-hidden">
+    <div *ngIf="products.length === 0" class="p-10 text-center text-slate-500 text-sm">No products yet. Create one.</div>
+    <table *ngIf="products.length > 0" class="w-full">
+      <thead class="bg-slate-800/60 border-b border-slate-700/50">
+        <tr>
+          <th class="table-header text-left">Product</th>
+          <th class="table-header text-center hidden sm:table-cell">Type</th>
+          <th class="table-header text-right hidden md:table-cell">Base Premium</th>
+          <th class="table-header text-right hidden lg:table-cell">Coverage</th>
+          <th class="table-header text-center hidden md:table-cell">Duration</th>
+          <th class="table-header text-center hidden xl:table-cell">Age Band</th>
+          <th class="table-header text-center">Status</th>
+          <th class="table-header text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800/60">
+        <tr *ngFor="let p of paginator.paged" class="hover:bg-slate-800/30 transition-colors">
+          <td class="table-cell">
+            <p class="font-medium text-white">{{ p.name }}</p>
+            <p class="text-xs text-slate-500 max-w-[200px] truncate mt-0.5">{{ p.description }}</p>
+          </td>
+          <td class="table-cell text-center hidden sm:table-cell">
+            <span class="status-badge text-xs" [class]="coverageColor(p.type)">{{ p.type }}</span>
+          </td>
+          <td class="table-cell text-right hidden md:table-cell text-white font-medium">Rs {{ p.basePremium | number:'1.0-0' }}</td>
+          <td class="table-cell text-right hidden lg:table-cell text-slate-300">Rs {{ p.coverageAmount | number:'1.0-0' }}</td>
+          <td class="table-cell text-center hidden md:table-cell text-slate-300 text-xs">{{ p.durationMonths }} mo</td>
+          <td class="table-cell text-center hidden xl:table-cell text-slate-300 text-xs">{{ p.minAge }} - {{ p.maxAge }}</td>
+          <td class="table-cell text-center">
+            <span class="status-badge text-xs"
+              [class]="p.isActive ? 'text-emerald-400 bg-emerald-400/10' : 'text-red-400 bg-red-400/10'">
+              {{ p.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="table-cell text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button (click)="openEdit(p)" class="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors">Edit</button>
+              <button *ngIf="p.isActive" (click)="deactivate(p)" class="text-xs px-3 py-1.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-600/20 rounded-lg transition-colors">Deactivate</button>
+              <button *ngIf="!p.isActive" (click)="reactivate(p)" class="text-xs px-3 py-1.5 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-600/20 rounded-lg transition-colors">Reactivate</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <app-pagination
+      [totalItems]="paginator.total"
+      [pageSize]="paginator.pageSize"
+      [currentPage]="paginator.currentPage"
+      (pageChange)="paginator.goTo($event)">
+    </app-pagination>
+  </div>
+</div>
+
+<div *ngIf="showModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="card p-6 w-full max-w-lg animate-enter max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-display font-semibold text-white">{{ editing ? 'Edit Product' : 'New Product' }}</h3>
+      <button (click)="showModal = false" class="text-slate-500 hover:text-white">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="error" class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-4">{{ error }}</div>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="label">Product Name</label>
+        <input formControlName="name" type="text" class="input-field" placeholder="e.g. Family Health Shield" />
+        <p *ngIf="form.get('name')?.invalid && form.get('name')?.touched" class="text-red-400 text-xs mt-1">Name is required</p>
+      </div>
+      <div>
+        <label class="label">Description</label>
+        <textarea formControlName="description" class="input-field resize-none" rows="2" placeholder="Brief description of this product..."></textarea>
+        <p *ngIf="form.get('description')?.invalid && form.get('description')?.touched" class="text-red-400 text-xs mt-1">Description required (min 10 chars)</p>
+      </div>
+      <div>
+        <label class="label">Policy Type</label>
+        <select formControlName="type" class="input-field">
+          <option value="" disabled>Select type</option>
+          <option *ngFor="let t of coverageTypes" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="label">Base Premium (Rs/mo)</label>
+          <input formControlName="basePremium" type="number" class="input-field" placeholder="500" />
+        </div>
+        <div>
+          <label class="label">Coverage (Rs)</label>
+          <input formControlName="coverageAmount" type="number" class="input-field" placeholder="500000" />
+        </div>
+        <div>
+          <label class="label">Duration (months)</label>
+          <input formControlName="durationMonths" type="number" class="input-field" placeholder="12" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Minimum Age</label>
+          <input formControlName="minAge" type="number" class="input-field" placeholder="18" />
+        </div>
+        <div>
+          <label class="label">Maximum Age</label>
+          <input formControlName="maxAge" type="number" class="input-field" placeholder="65" />
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" (click)="showModal = false" class="btn-secondary flex-1 justify-center">Cancel</button>
+        <button type="submit" [disabled]="saving" class="btn-primary flex-1 justify-center">
+          <svg *ngIf="saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          {{ saving ? 'Saving...' : (editing ? 'Save Changes' : 'Create Product') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
